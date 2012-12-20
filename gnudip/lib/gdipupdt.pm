@@ -128,6 +128,7 @@ sub gen_salt {
   my $gentime  = time();
   my $checkval = md5_hex("$salt.$gentime.$server_key");
 
+
   pg_updtsrv(
     'Salt generated',
     'salt', $salt,
@@ -149,6 +150,7 @@ sub do_updt {
 
   # validate the signature
   my $checkval = md5_hex("$salt.$gentime.$server_key");
+
   if ($checkval ne $$reqparm{'sign'}) {
     writelog($logprfx .
       "Invalid signature for $clientuser.$clientdomain");
@@ -163,13 +165,6 @@ $pretty_query
   my $timeout = $$conf{'timeout_updt'};
   if (! defined $timeout) {
     $timeout = 6 * $$conf{'timeout'};
-  }
-
-  # timed out?
-  if (time() > $gentime + $timeout) {
-    writelog($logprfx .
-      "Salt value too old from $remote_ip: user $clientuser.$clientdomain");
-    respond('Error: Salt value too old', '1');
   }
 
   # sensible request?
@@ -194,8 +189,8 @@ $pretty_query
     $check =~ s/\?/\(\.\)/g;
     # check for a match
     if ($clientuser   =~ /^$check\b/ and 
-        $clientdomain eq $$conf{'dummydomn'} and 
-        $clientpass   eq md5_hex(md5_hex($$conf{'dummypswd'}) . ".$salt")) {
+        $clientdomain eq $$conf{'dummydomn'} and
+        $clientpass   eq md5_hex($$conf{'dummypswd'})) {
       writelog(
         "Dummy request processed for user $clientuser from ip $ip");
       respond('Successful dummy request', '0', $ip);
@@ -209,7 +204,7 @@ $pretty_query
   if (!$userinfo                              or
       $clientuser   ne $$userinfo{'username'} or
       $clientdomain ne $$userinfo{'domain'}   or
-      $clientpass   ne md5_hex("$$userinfo{'password'}.$salt")
+      $clientpass   ne $$userinfo{'password'}     
       ) {
     writelog($logprfx .
       "Invalid login attempt from $ip: user $clientuser.$clientdomain");
